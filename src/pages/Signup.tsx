@@ -6,15 +6,26 @@ import { toast } from 'sonner';
 
 const Signup = () => {
   const [form, setForm] = useState({ username: '', displayName: '', email: '', password: '' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { signup } = useStore();
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (signup(form.username, form.displayName, form.email, form.password)) {
+    if (!form.username.trim() || !form.displayName.trim() || !form.email.trim() || !form.password.trim()) {
+      toast.error('All fields are required');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await signup(form.username.trim(), form.displayName.trim(), form.email.trim(), form.password);
       navigate('/');
-    } else {
-      toast.error('Username or email already taken');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Signup failed';
+      toast.error(message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -24,7 +35,10 @@ const Signup = () => {
     <div className="flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-sm space-y-8">
         <div className="text-center">
-          <h1 className="font-heading text-3xl font-bold text-primary">Join Threadly</h1>
+          <span className="mx-auto mb-4 flex h-20 w-20 items-center justify-center overflow-hidden rounded-3xl bg-primary/10 ring-1 ring-primary/15">
+            <img src="/logo.png" alt="ChatGram Logo" className="h-full w-full scale-[1.45] object-contain" />
+          </span>
+          <h1 className="font-heading text-3xl font-bold text-primary">Join ChatGram</h1>
           <p className="mt-2 text-sm text-muted-foreground">Create your account and start sharing.</p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -43,7 +57,9 @@ const Signup = () => {
               />
             </div>
           ))}
-          <Button type="submit" className="w-full">Create Account</Button>
+          <Button type="submit" className="w-full" disabled={isSubmitting}>
+            {isSubmitting ? 'Creating Account...' : 'Create Account'}
+          </Button>
         </form>
         <p className="text-center text-sm text-muted-foreground">
           Already have an account? <Link to="/login" className="font-semibold text-primary hover:underline">Sign in</Link>

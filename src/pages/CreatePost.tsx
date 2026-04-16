@@ -4,19 +4,30 @@ import { useStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, ImagePlus } from 'lucide-react';
 import { toast } from 'sonner';
+import { getRealAvatarUrl } from '@/lib/avatar';
 
 const CreatePost = () => {
   const [content, setContent] = useState('');
   const [image, setImage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { createPost } = useStore();
   const navigate = useNavigate();
+  const previewImageUrl = image.trim();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!content.trim()) return;
-    createPost(content.trim(), image || undefined);
-    toast.success('Post created!');
-    navigate('/');
+    setIsSubmitting(true);
+    try {
+    await createPost(content.trim(), image.trim() || undefined);
+      toast.success('Post created!');
+      navigate('/');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to create post';
+      toast.error(message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -39,8 +50,24 @@ const CreatePost = () => {
           <input value={image} onChange={e => setImage(e.target.value)}
             className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
             placeholder="https://example.com/image.jpg" />
+          {previewImageUrl ? (
+            <div className="mt-3 overflow-hidden rounded-xl border border-border bg-muted">
+              <img
+                src={previewImageUrl}
+                alt="Preview"
+                loading="lazy"
+                referrerPolicy="no-referrer"
+                onError={(event) => {
+                  event.currentTarget.src = getRealAvatarUrl(previewImageUrl, '');
+                }}
+                className="h-48 w-full object-cover"
+              />
+            </div>
+          ) : null}
         </div>
-        <Button type="submit" className="w-full" disabled={!content.trim()}>Post</Button>
+        <Button type="submit" className="w-full" disabled={!content.trim() || isSubmitting}>
+          {isSubmitting ? 'Posting...' : 'Post'}
+        </Button>
       </form>
     </div>
   );

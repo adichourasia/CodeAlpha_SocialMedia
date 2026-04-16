@@ -1,203 +1,465 @@
 import { create } from 'zustand';
+import {
+  ApiError,
+  apiRequest,
+  clearStoredToken,
+  getStoredToken,
+  protectedRequest,
+  setStoredToken,
+} from '@/lib/api';
 
 export interface User {
-  id: string;
+  id: number;
+  username: string;
+  email: string;
+  displayName: string;
+  bio: string;
+  avatarUrl: string;
+  createdAt: string;
+}
+
+export interface PostAuthor {
+  id: number;
   username: string;
   displayName: string;
-  email: string;
-  bio: string;
-  avatar: string;
-  followers: string[];
-  following: string[];
+  avatarUrl: string;
+}
+
+export interface PostComment {
+  id: number;
+  content: string;
+  createdAt: string;
+  author: PostAuthor;
 }
 
 export interface Post {
-  id: string;
-  authorId: string;
+  id: number;
   content: string;
-  image?: string;
-  likes: string[];
-  comments: Comment[];
-  createdAt: Date;
+  imageUrl: string;
+  createdAt: string;
+  likeCount: number;
+  commentCount: number;
+  likedByMe: boolean;
+  author: PostAuthor;
+  comments: PostComment[];
 }
 
-export interface Comment {
-  id: string;
-  authorId: string;
-  content: string;
-  createdAt: Date;
+export interface ProfileStats {
+  postCount: number;
+  followerCount: number;
+  followingCount: number;
 }
 
-const DEMO_USERS: User[] = [
-  {
-    id: '1', username: 'alexchen', displayName: 'Alex Chen', email: 'alex@example.com',
-    bio: 'Designer & maker. Building cool things on the internet ✨',
-    avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop&crop=face',
-    followers: ['2', '3', '4'], following: ['2', '3'],
-  },
-  {
-    id: '2', username: 'saradesign', displayName: 'Sara Kim', email: 'sara@example.com',
-    bio: 'UI/UX designer at heart 🎨 Coffee addict ☕',
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face',
-    followers: ['1', '3'], following: ['1', '4'],
-  },
-  {
-    id: '3', username: 'marcusdev', displayName: 'Marcus Johnson', email: 'marcus@example.com',
-    bio: 'Full-stack developer 🚀 Open source enthusiast',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
-    followers: ['1'], following: ['1', '2'],
-  },
-  {
-    id: '4', username: 'emmawrite', displayName: 'Emma Davis', email: 'emma@example.com',
-    bio: 'Writer & storyteller 📝 Exploring the world one word at a time',
-    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
-    followers: ['2'], following: [],
-  },
-];
+export interface ProfileData {
+  user: User;
+  stats: ProfileStats;
+  isFollowing: boolean;
+}
 
-const DEMO_POSTS: Post[] = [
-  {
-    id: 'p1', authorId: '1', content: 'Just launched my new portfolio site! Feeling proud of how it turned out. What do you all think? 🚀',
-    image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&h=400&fit=crop',
-    likes: ['2', '3'], comments: [
-      { id: 'c1', authorId: '2', content: 'Looks amazing! Love the color palette 🎨', createdAt: new Date('2025-04-14T10:30:00') },
-    ],
-    createdAt: new Date('2025-04-14T09:00:00'),
-  },
-  {
-    id: 'p2', authorId: '2', content: 'Morning coffee and wireframes — the perfect combo. ☕✏️ Working on something exciting that I can\'t wait to share!',
-    likes: ['1', '3', '4'], comments: [],
-    createdAt: new Date('2025-04-13T08:15:00'),
-  },
-  {
-    id: 'p3', authorId: '3', content: 'Just open-sourced my new React hooks library! Check it out and let me know your thoughts. Contributions welcome! 🛠️',
-    image: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=600&h=400&fit=crop',
-    likes: ['1'], comments: [
-      { id: 'c2', authorId: '1', content: 'This is awesome Marcus! Starred it already ⭐', createdAt: new Date('2025-04-12T15:00:00') },
-      { id: 'c3', authorId: '4', content: 'Great work! Will definitely try it out.', createdAt: new Date('2025-04-12T16:30:00') },
-    ],
-    createdAt: new Date('2025-04-12T14:00:00'),
-  },
-  {
-    id: 'p4', authorId: '4', content: 'Sometimes the best ideas come when you stop trying so hard. Taking a break by the lake today. 🌊',
-    image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&h=400&fit=crop',
-    likes: ['2'], comments: [],
-    createdAt: new Date('2025-04-11T11:00:00'),
-  },
-];
+export interface PaginationOptions {
+  limit?: number;
+  offset?: number;
+  reset?: boolean;
+}
 
 interface AppStore {
+  token: string | null;
   currentUser: User | null;
-  users: User[];
   posts: Post[];
   isAuthenticated: boolean;
-  login: (username: string, password: string) => boolean;
-  signup: (username: string, displayName: string, email: string, password: string) => boolean;
+  isBootstrapping: boolean;
+  isLoadingPosts: boolean;
+  error: string | null;
+  initializeAuth: () => Promise<void>;
+  login: (usernameOrEmail: string, password: string) => Promise<void>;
+  signup: (username: string, displayName: string, email: string, password: string) => Promise<void>;
   logout: () => void;
-  createPost: (content: string, image?: string) => void;
-  deletePost: (postId: string) => void;
-  toggleLike: (postId: string) => void;
-  addComment: (postId: string, content: string) => void;
-  deleteComment: (postId: string, commentId: string) => void;
-  toggleFollow: (userId: string) => void;
-  updateProfile: (data: Partial<Pick<User, 'displayName' | 'bio' | 'avatar'>>) => void;
-  getUserById: (id: string) => User | undefined;
+  loadPosts: (options?: PaginationOptions) => Promise<{ posts: Post[]; hasMore: boolean }>;
+  loadPost: (postId: number) => Promise<Post>;
+  createPost: (content: string, imageUrl?: string) => Promise<void>;
+  toggleLike: (postId: number) => Promise<void>;
+  loadComments: (postId: number) => Promise<void>;
+  addComment: (postId: number, content: string) => Promise<void>;
+  deletePost: (postId: number) => Promise<void>;
+  deleteComment: (postId: number, commentId: number) => Promise<void>;
+  toggleFollow: (username: string) => Promise<boolean>;
+  loadProfile: (username: string) => Promise<ProfileData>;
+  loadProfilePosts: (username: string, options?: PaginationOptions) => Promise<{ posts: Post[]; hasMore: boolean }>;
+  loadFollowList: (username: string, type: 'followers' | 'following') => Promise<User[]>;
+  updateProfile: (data: Partial<Pick<User, 'displayName' | 'bio' | 'avatarUrl'>>) => Promise<User>;
+  getPostById: (id: number) => Post | undefined;
+  clearError: () => void;
 }
 
+const normalizePost = (post: Omit<Post, 'comments'> & { comments?: PostComment[] }): Post => ({
+  ...post,
+  imageUrl: post.imageUrl || '',
+  comments: post.comments || [],
+});
+
+const getApiErrorMessage = (error: unknown) => {
+  if (error instanceof ApiError) {
+    return error.message;
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return 'Something went wrong';
+};
+
+const buildQueryPath = (path: string, options: PaginationOptions = {}) => {
+  const params = new URLSearchParams();
+  if (options.limit !== undefined) params.set('limit', String(options.limit));
+  if (options.offset !== undefined) params.set('offset', String(options.offset));
+  const query = params.toString();
+  return query ? `${path}?${query}` : path;
+};
+
+const updatePostInState = (state: AppStore, postId: number, updater: (post: Post) => Post) =>
+  state.posts.map((post) => (post.id === postId ? updater(post) : post));
+
 export const useStore = create<AppStore>((set, get) => ({
-  currentUser: DEMO_USERS[0],
-  users: DEMO_USERS,
-  posts: DEMO_POSTS,
-  isAuthenticated: true,
+  token: getStoredToken(),
+  currentUser: null,
+  posts: [],
+  isAuthenticated: false,
+  isBootstrapping: true,
+  isLoadingPosts: false,
+  error: null,
 
-  login: (username: string, _password: string) => {
-    const user = get().users.find(u => u.username === username);
-    if (user) {
-      set({ currentUser: user, isAuthenticated: true });
-      return true;
+  initializeAuth: async () => {
+    const token = getStoredToken();
+    if (!token) {
+      set({ token: null, currentUser: null, isAuthenticated: false, isBootstrapping: false });
+      return;
     }
-    return false;
+
+    try {
+      const response = await protectedRequest<{ user: User }>('/api/me', { token });
+      set({
+        token,
+        currentUser: response.user,
+        isAuthenticated: true,
+        isBootstrapping: false,
+        error: null,
+      });
+    } catch {
+      clearStoredToken();
+      set({ token: null, currentUser: null, isAuthenticated: false, isBootstrapping: false });
+    }
   },
 
-  signup: (username, displayName, email, _password) => {
-    const exists = get().users.find(u => u.username === username || u.email === email);
-    if (exists) return false;
-    const newUser: User = {
-      id: Date.now().toString(), username, displayName, email, bio: '',
-      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=E8622A&color=fff&size=150`,
-      followers: [], following: [],
-    };
-    set(s => ({ users: [...s.users, newUser], currentUser: newUser, isAuthenticated: true }));
-    return true;
-  },
+  login: async (usernameOrEmail, password) => {
+    const payload = usernameOrEmail.includes('@')
+      ? { email: usernameOrEmail, password }
+      : { username: usernameOrEmail, password };
 
-  logout: () => set({ currentUser: null, isAuthenticated: false }),
-
-  createPost: (content, image) => {
-    const user = get().currentUser;
-    if (!user) return;
-    const post: Post = {
-      id: Date.now().toString(), authorId: user.id, content, image,
-      likes: [], comments: [], createdAt: new Date(),
-    };
-    set(s => ({ posts: [post, ...s.posts] }));
-  },
-
-  deletePost: (postId) => set(s => ({ posts: s.posts.filter(p => p.id !== postId) })),
-
-  toggleLike: (postId) => {
-    const user = get().currentUser;
-    if (!user) return;
-    set(s => ({
-      posts: s.posts.map(p =>
-        p.id === postId
-          ? { ...p, likes: p.likes.includes(user.id) ? p.likes.filter(id => id !== user.id) : [...p.likes, user.id] }
-          : p
-      ),
-    }));
-  },
-
-  addComment: (postId, content) => {
-    const user = get().currentUser;
-    if (!user) return;
-    const comment: Comment = { id: Date.now().toString(), authorId: user.id, content, createdAt: new Date() };
-    set(s => ({
-      posts: s.posts.map(p => p.id === postId ? { ...p, comments: [...p.comments, comment] } : p),
-    }));
-  },
-
-  deleteComment: (postId, commentId) =>
-    set(s => ({
-      posts: s.posts.map(p =>
-        p.id === postId ? { ...p, comments: p.comments.filter(c => c.id !== commentId) } : p
-      ),
-    })),
-
-  toggleFollow: (userId) => {
-    const user = get().currentUser;
-    if (!user || user.id === userId) return;
-    set(s => {
-      const isFollowing = user.following.includes(userId);
-      return {
-        currentUser: { ...user, following: isFollowing ? user.following.filter(id => id !== userId) : [...user.following, userId] },
-        users: s.users.map(u => {
-          if (u.id === user.id) return { ...u, following: isFollowing ? u.following.filter(id => id !== userId) : [...u.following, userId] };
-          if (u.id === userId) return { ...u, followers: isFollowing ? u.followers.filter(id => id !== user.id) : [...u.followers, user.id] };
-          return u;
-        }),
-      };
+    const response = await apiRequest<{ token: string; user: User }>('/api/auth/login', {
+      method: 'POST',
+      body: payload,
     });
+
+    setStoredToken(response.token);
+    set({ token: response.token, currentUser: response.user, isAuthenticated: true, error: null });
   },
 
-  updateProfile: (data) => {
-    const user = get().currentUser;
-    if (!user) return;
-    const updated = { ...user, ...data };
-    set(s => ({
-      currentUser: updated,
-      users: s.users.map(u => u.id === user.id ? updated : u),
+  signup: async (username, displayName, email, password) => {
+    const response = await apiRequest<{ token: string; user: User }>('/api/auth/signup', {
+      method: 'POST',
+      body: { username, displayName, email, password },
+    });
+
+    setStoredToken(response.token);
+    set({ token: response.token, currentUser: response.user, isAuthenticated: true, error: null });
+  },
+
+  logout: () => {
+    clearStoredToken();
+    set({ token: null, currentUser: null, posts: [], isAuthenticated: false, error: null });
+  },
+
+  loadPosts: async (options = {}) => {
+    const { limit = 10, offset = 0, reset = offset === 0 } = options;
+    set({ isLoadingPosts: reset });
+
+    try {
+      const { token } = get();
+      const path = buildQueryPath('/api/posts', { limit, offset });
+      const response = token
+        ? await protectedRequest<{ posts: Post[]; hasMore: boolean }>(path, { method: 'GET', token })
+        : await apiRequest<{ posts: Post[]; hasMore: boolean }>(path, { method: 'GET' });
+
+      const nextPosts = response.posts.map(normalizePost);
+      set((state) => ({
+        posts: reset ? nextPosts : [...state.posts, ...nextPosts],
+        isLoadingPosts: false,
+        error: null,
+      }));
+
+      return { posts: nextPosts, hasMore: response.hasMore ?? nextPosts.length === limit };
+    } catch (error) {
+      set({ isLoadingPosts: false, error: getApiErrorMessage(error) });
+      throw error;
+    }
+  },
+
+  loadPost: async (postId) => {
+    const { token } = get();
+    const response = token
+      ? await protectedRequest<{ post: Post }>(`/api/posts/${postId}`, { method: 'GET', token })
+      : await apiRequest<{ post: Post }>(`/api/posts/${postId}`, { method: 'GET' });
+
+    const loadedPost = normalizePost(response.post);
+    set((state) => {
+      const existingIndex = state.posts.findIndex((post) => post.id === postId);
+      if (existingIndex === -1) {
+        return { posts: [...state.posts, loadedPost], error: null };
+      }
+
+      const nextPosts = [...state.posts];
+      nextPosts[existingIndex] = loadedPost;
+      return { posts: nextPosts, error: null };
+    });
+
+    return loadedPost;
+  },
+
+  createPost: async (content, imageUrl) => {
+    const { token } = get();
+    const normalizedImageUrl = imageUrl?.trim() || '';
+    const response = await protectedRequest<{ post: Post }>('/api/posts', {
+      method: 'POST',
+      token,
+      body: { content, imageUrl: normalizedImageUrl },
+    });
+
+    const createdPost = normalizePost(response.post);
+    set((state) => ({ posts: [createdPost, ...state.posts], error: null }));
+  },
+
+  toggleLike: async (postId) => {
+    const { token } = get();
+    const previousPost = get().posts.find((post) => post.id === postId);
+    if (!previousPost) {
+      throw new ApiError('Post not found', 404);
+    }
+
+    const optimisticLiked = !previousPost.likedByMe;
+    const optimisticCount = Math.max(0, previousPost.likeCount + (optimisticLiked ? 1 : -1));
+    set((state) => ({
+      posts: updatePostInState(state, postId, (post) => ({
+        ...post,
+        likedByMe: optimisticLiked,
+        likeCount: optimisticCount,
+      })),
+    }));
+
+    try {
+      const response = await protectedRequest<{ liked: boolean; likeCount: number }>(`/api/posts/${postId}/like`, {
+        method: 'POST',
+        token,
+      });
+
+      set((state) => ({
+        posts: updatePostInState(state, postId, (post) => ({
+          ...post,
+          likedByMe: response.liked,
+          likeCount: response.likeCount,
+        })),
+        error: null,
+      }));
+    } catch (error) {
+      set((state) => ({
+        posts: updatePostInState(state, postId, () => previousPost),
+      }));
+      throw error;
+    }
+  },
+
+  loadComments: async (postId) => {
+    const response = await apiRequest<{ comments: PostComment[] }>(`/api/posts/${postId}/comments`, {
+      method: 'GET',
+    });
+
+    set((state) => ({
+      posts: state.posts.map((post) =>
+        post.id === postId
+          ? {
+              ...post,
+              comments: response.comments,
+              commentCount: response.comments.length,
+            }
+          : post
+      ),
+      error: null,
     }));
   },
 
-  getUserById: (id) => get().users.find(u => u.id === id),
+  addComment: async (postId, content) => {
+    const { token, currentUser } = get();
+    if (!currentUser) {
+      throw new ApiError('Authentication required', 401);
+    }
+
+    const tempId = Date.now();
+    const optimisticComment: PostComment = {
+      id: tempId,
+      content,
+      createdAt: new Date().toISOString(),
+      author: {
+        id: currentUser.id,
+        username: currentUser.username,
+        displayName: currentUser.displayName,
+        avatarUrl: currentUser.avatarUrl,
+      },
+    };
+
+    set((state) => ({
+      posts: state.posts.map((post) =>
+        post.id === postId
+          ? {
+              ...post,
+              comments: [...post.comments, optimisticComment],
+              commentCount: post.commentCount + 1,
+            }
+          : post
+      ),
+    }));
+
+    try {
+      const response = await protectedRequest<{ comment: PostComment }>(`/api/posts/${postId}/comments`, {
+        method: 'POST',
+        token,
+        body: { content },
+      });
+
+      set((state) => ({
+        posts: state.posts.map((post) =>
+          post.id === postId
+            ? {
+                ...post,
+                comments: post.comments.map((comment) => (comment.id === tempId ? response.comment : comment)),
+              }
+            : post
+        ),
+        error: null,
+      }));
+    } catch (error) {
+      set((state) => ({
+        posts: state.posts.map((post) =>
+          post.id === postId
+            ? {
+                ...post,
+                comments: post.comments.filter((comment) => comment.id !== tempId),
+                commentCount: Math.max(0, post.commentCount - 1),
+              }
+            : post
+        ),
+      }));
+      throw error;
+    }
+  },
+
+  deletePost: async (postId) => {
+    const { token } = get();
+    const previousPosts = get().posts;
+    set((state) => ({ posts: state.posts.filter((post) => post.id !== postId) }));
+
+    try {
+      await protectedRequest<{ deleted: boolean }>(`/api/posts/${postId}`, {
+        method: 'DELETE',
+        token,
+      });
+      set({ error: null });
+    } catch (error) {
+      set({ posts: previousPosts });
+      throw error;
+    }
+  },
+
+  deleteComment: async (postId, commentId) => {
+    const { token } = get();
+    const previousPosts = get().posts;
+
+    set((state) => ({
+      posts: state.posts.map((post) =>
+        post.id === postId
+          ? {
+              ...post,
+              comments: post.comments.filter((comment) => comment.id !== commentId),
+              commentCount: Math.max(0, post.commentCount - 1),
+            }
+          : post
+      ),
+    }));
+
+    try {
+      await protectedRequest<{ deleted: boolean }>(`/api/posts/${postId}/comments/${commentId}`, {
+        method: 'DELETE',
+        token,
+      });
+      set({ error: null });
+    } catch (error) {
+      set({ posts: previousPosts });
+      throw error;
+    }
+  },
+
+  toggleFollow: async (username) => {
+    const { token } = get();
+    const response = await protectedRequest<{ following: boolean }>(`/api/profiles/${username}/follow`, {
+      method: 'POST',
+      token,
+    });
+
+    return response.following;
+  },
+
+  loadProfile: async (username) => {
+    const { token } = get();
+    const response = token
+      ? await protectedRequest<ProfileData>(`/api/profiles/${username}`, { method: 'GET', token })
+      : await apiRequest<ProfileData>(`/api/profiles/${username}`, { method: 'GET' });
+
+    return response;
+  },
+
+  loadProfilePosts: async (username, options = {}) => {
+    const { limit = 6, offset = 0 } = options;
+    const { token } = get();
+    const path = buildQueryPath(`/api/profiles/${username}/posts`, { limit, offset });
+    const response = token
+      ? await protectedRequest<{ posts: Post[]; hasMore: boolean }>(path, { method: 'GET', token })
+      : await apiRequest<{ posts: Post[]; hasMore: boolean }>(path, { method: 'GET' });
+
+    const posts = response.posts.map(normalizePost);
+    return { posts, hasMore: response.hasMore ?? posts.length === limit };
+  },
+
+  loadFollowList: async (username, type) => {
+    const { token } = get();
+    const response = token
+      ? await protectedRequest<{ users: User[] }>(`/api/profiles/${username}/${type}`, { method: 'GET', token })
+      : await apiRequest<{ users: User[] }>(`/api/profiles/${username}/${type}`, { method: 'GET' });
+
+    return response.users;
+  },
+
+  updateProfile: async (data) => {
+    const { token } = get();
+    const response = await protectedRequest<{ user: User }>('/api/profiles/me', {
+      method: 'PATCH',
+      token,
+      body: data,
+    });
+
+    set({ currentUser: response.user, error: null });
+    return response.user;
+  },
+
+  getPostById: (id) => get().posts.find((post) => post.id === id),
+
+  clearError: () => set({ error: null }),
 }));

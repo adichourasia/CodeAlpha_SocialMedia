@@ -7,15 +7,26 @@ import { toast } from 'sonner';
 const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { login } = useStore();
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (login(username, password)) {
+    if (!username.trim() || !password.trim()) {
+      toast.error('Please enter username/email and password');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await login(username.trim(), password);
       navigate('/');
-    } else {
-      toast.error('Invalid username. Try: alexchen, saradesign, marcusdev, or emmawrite');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Login failed';
+      toast.error(message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -23,16 +34,19 @@ const Login = () => {
     <div className="flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-sm space-y-8">
         <div className="text-center">
-          <h1 className="font-heading text-3xl font-bold text-primary">Threadly</h1>
+          <span className="mx-auto mb-4 flex h-20 w-20 items-center justify-center overflow-hidden rounded-3xl bg-primary/10 ring-1 ring-primary/15">
+            <img src="/logo.png" alt="ChatGram Logo" className="h-full w-full scale-[1.45] object-contain" />
+          </span>
+          <h1 className="font-heading text-3xl font-bold text-primary">ChatGram</h1>
           <p className="mt-2 text-sm text-muted-foreground">Welcome back! Sign in to continue.</p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="text-sm font-medium">Username</label>
+            <label className="text-sm font-medium">Username or Email</label>
             <input
               value={username} onChange={e => setUsername(e.target.value)}
               className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-              placeholder="alexchen"
+              placeholder="alexchen or alex@example.com"
             />
           </div>
           <div>
@@ -40,10 +54,12 @@ const Login = () => {
             <input
               type="password" value={password} onChange={e => setPassword(e.target.value)}
               className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-              placeholder="Any password works for demo"
+              placeholder="Your password"
             />
           </div>
-          <Button type="submit" className="w-full">Sign In</Button>
+          <Button type="submit" className="w-full" disabled={isSubmitting}>
+            {isSubmitting ? 'Signing In...' : 'Sign In'}
+          </Button>
         </form>
         <p className="text-center text-sm text-muted-foreground">
           Don't have an account? <Link to="/signup" className="font-semibold text-primary hover:underline">Sign up</Link>

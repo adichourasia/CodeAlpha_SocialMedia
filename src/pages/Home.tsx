@@ -1,42 +1,81 @@
+import { useEffect, useRef, useState } from 'react';
 import { useStore } from '@/lib/store';
 import PostCard from '@/components/PostCard';
 import { Link } from 'react-router-dom';
 import { PlusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 const Home = () => {
-  const { posts, currentUser } = useStore();
+  const { posts, loadPosts, isLoadingPosts } = useStore();
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
 
-  // Show posts from followed users + own posts, sorted by date
-  const feedPosts = posts
-    .filter(p => currentUser?.following.includes(p.authorId) || p.authorId === currentUser?.id)
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  useEffect(() => {
+    loadPosts({ limit: 10, offset: 0, reset: true })
+      .then((result) => setHasMore(result.hasMore))
+      .catch((error) => {
+      const message = error instanceof Error ? error.message : 'Failed to load feed';
+      toast.error(message);
+      });
+  }, [loadPosts]);
 
-  const allPosts = posts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  useEffect(() => {
+    const node = sentinelRef.current;
+    if (!node || !hasMore) return;
+
+    const observer = new IntersectionObserver((entries) => {
+      if (!entries[0]?.isIntersecting || isLoadingPosts || isFetchingMore) return;
+
+      setIsFetchingMore(true);
+      loadPosts({ limit: 10, offset: posts.length, reset: false })
+        .then((result) => setHasMore(result.hasMore))
+        .catch((error) => {
+          const message = error instanceof Error ? error.message : 'Failed to load more posts';
+          toast.error(message);
+        })
+        .finally(() => setIsFetchingMore(false));
+    }, { rootMargin: '200px' });
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [hasMore, isFetchingMore, isLoadingPosts, loadPosts, posts.length]);
 
   return (
     <div className="mx-auto max-w-2xl">
       <div className="sticky top-16 z-40 border-b border-border bg-card/80 backdrop-blur-lg">
         <div className="flex items-center justify-between px-4 py-3">
-          <h1 className="font-heading text-lg font-bold">Feed</h1>
+          <div className="flex items-center gap-3">
+            <span className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl bg-primary/10 ring-1 ring-primary/15">
+              <img src="/logo.png" alt="ChatGram" className="h-full w-full scale-[1.45] object-contain" />
+            </span>
+            <h1 className="font-heading text-lg font-bold">Feed</h1>
+          </div>
           <Button size="sm" asChild>
             <Link to="/create"><PlusCircle className="mr-1.5 h-4 w-4" /> New Post</Link>
           </Button>
         </div>
       </div>
 
-      {feedPosts.length === 0 ? (
+      {isLoadingPosts ? (
         <div className="px-4 py-16 text-center">
-          <p className="text-muted-foreground">Your feed is empty. Follow some people to see their posts!</p>
-          <div className="mt-6 space-y-1">
-            <p className="text-xs font-heading font-semibold text-muted-foreground">Explore all posts</p>
-          </div>
+          <p className="text-muted-foreground">Loading feed...</p>
         </div>
       ) : null}
 
-      {(feedPosts.length > 0 ? feedPosts : allPosts).map(post => (
+      {!isLoadingPosts && posts.length === 0 ? (
+        <div className="px-4 py-16 text-center">
+          <p className="text-muted-foreground">No posts yet. Be the first to share something.</p>
+        </div>
+      ) : null}
+
+      {posts.map(post => (
         <PostCard key={post.id} post={post} />
       ))}
+
+      <div ref={sentinelRef} className="h-8" />
+      {isFetchingMore ? <p className="pb-8 text-center text-xs text-muted-foreground">Loading more...</p> : null}
     </div>
   );
 };

@@ -17,8 +17,11 @@ const Navbar = () => {
   return (
     <nav className="sticky top-0 z-50 border-b border-border bg-card/80 backdrop-blur-lg">
       <div className="mx-auto flex h-16 max-w-2xl items-center justify-between px-4">
-        <Link to="/" className="font-heading text-xl font-bold text-primary">
-          Threadly
+        <Link to="/" className="flex items-center gap-2">
+          <span className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-primary/10 ring-1 ring-primary/15">
+            <img src="/logo.png" alt="ChatGram" className="h-full w-full scale-[1.45] object-contain" />
+          </span>
+          <span className="font-heading text-xl font-bold text-primary">ChatGram</span>
         </Link>
         <div className="flex items-center gap-1">
           <Button variant="ghost" size="icon" asChild>
