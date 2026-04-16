@@ -4,9 +4,10 @@ import { useStore, Post, ProfileData } from '@/lib/store';
 import PostCard from '@/components/PostCard';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Settings } from 'lucide-react';
+import { Download, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 import { getRealAvatarUrl } from '@/lib/avatar';
+import { usePwaInstall } from '@/lib/pwa';
 
 const Profile = () => {
   const { username } = useParams();
@@ -18,6 +19,7 @@ const Profile = () => {
   const [hasMorePosts, setHasMorePosts] = useState(true);
   const [isFetchingMorePosts, setIsFetchingMorePosts] = useState(false);
   const postsSentinelRef = useRef<HTMLDivElement | null>(null);
+  const { canInstall, isInstalled, triggerInstall } = usePwaInstall();
 
   useEffect(() => {
     if (!username) return;
@@ -72,6 +74,22 @@ const Profile = () => {
   const isOwnProfile = currentUser?.id === user.id;
   const isFollowing = profile.isFollowing;
 
+  const handleInstallPwa = async () => {
+    const result = await triggerInstall();
+
+    if (!result.available) {
+      toast.info('Install prompt is not available yet. Keep using the app for a few seconds and try again.');
+      return;
+    }
+
+    if (result.outcome === 'accepted') {
+      toast.success('ChatGram install started.');
+      return;
+    }
+
+    toast.info('Install was dismissed. You can try again anytime from this button.');
+  };
+
   const handleToggleFollow = async () => {
     if (!username) return;
     setIsTogglingFollow(true);
@@ -114,36 +132,48 @@ const Profile = () => {
   };
 
   return (
-    <div className="mx-auto max-w-2xl">
-      <div className="border-b border-border p-6">
+    <div className="mx-auto max-w-2xl px-3 sm:px-0">
+      <div className="border-b border-border p-4 sm:p-6">
         <div className="flex items-start gap-4">
-          <Avatar className="h-20 w-20">
+          <Avatar className="h-16 w-16 sm:h-20 sm:w-20">
             <AvatarImage src={getRealAvatarUrl(user.username, user.avatarUrl)} alt={user.displayName} />
             <AvatarFallback className="text-2xl">{user.displayName[0]}</AvatarFallback>
           </Avatar>
           <div className="flex-1">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="font-heading text-xl font-bold">{user.displayName}</h1>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <h1 className="font-heading text-lg font-bold sm:text-xl">{user.displayName}</h1>
                 <p className="text-sm text-muted-foreground">@{user.username}</p>
               </div>
-              {isOwnProfile ? (
-                <Button variant="outline" size="sm" asChild>
-                  <Link to="/edit-profile"><Settings className="mr-1.5 h-4 w-4" /> Edit</Link>
-                </Button>
-              ) : (
+              <div className="flex flex-wrap items-center gap-2">
+                {isOwnProfile ? (
+                  <Button variant="outline" size="sm" asChild>
+                    <Link to="/edit-profile"><Settings className="mr-1.5 h-4 w-4" /> Edit</Link>
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant={isFollowing ? 'outline' : 'default'}
+                    onClick={handleToggleFollow}
+                    disabled={isTogglingFollow}
+                  >
+                    {isFollowing ? 'Unfollow' : 'Follow'}
+                  </Button>
+                )}
                 <Button
+                  variant="outline"
                   size="sm"
-                  variant={isFollowing ? 'outline' : 'default'}
-                  onClick={handleToggleFollow}
-                  disabled={isTogglingFollow}
+                  onClick={handleInstallPwa}
+                  disabled={isInstalled}
+                  className="w-full sm:w-auto"
                 >
-                  {isFollowing ? 'Unfollow' : 'Follow'}
+                  <Download className="mr-1.5 h-4 w-4" />
+                  {isInstalled ? 'Installed' : canInstall ? 'Download PWA' : 'Download App'}
                 </Button>
-              )}
+              </div>
             </div>
             <p className="mt-2 text-sm">{user.bio}</p>
-            <div className="mt-3 flex gap-4 text-sm">
+            <div className="mt-3 flex flex-wrap gap-3 text-sm sm:gap-4">
               <Link to={`/profile/${user.username}/followers`} className="hover:underline">
                 <span className="font-semibold">{stats.followerCount}</span> <span className="text-muted-foreground">followers</span>
               </Link>

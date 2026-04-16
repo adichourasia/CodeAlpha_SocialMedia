@@ -44,16 +44,16 @@ const Home = () => {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <div className="sticky top-16 z-40 border-b border-border bg-card/80 backdrop-blur-lg">
-        <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-3">
-            <span className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl bg-primary/10 ring-1 ring-primary/15">
+      <div className="sticky top-14 z-40 border-b border-border bg-card/80 backdrop-blur-lg sm:top-16">
+        <div className="flex items-center justify-between gap-2 px-3 py-2.5 sm:px-4 sm:py-3">
+          <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
+            <span className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-primary/10 ring-1 ring-primary/15 sm:h-12 sm:w-12">
               <img src="/logo.png" alt="ChatGram" className="h-full w-full scale-[1.45] object-contain" />
             </span>
-            <h1 className="font-heading text-lg font-bold">Feed</h1>
+            <h1 className="font-heading text-base font-bold sm:text-lg">Feed</h1>
           </div>
           <Button size="sm" asChild>
-            <Link to="/create"><PlusCircle className="mr-1.5 h-4 w-4" /> New Post</Link>
+            <Link to="/create"><PlusCircle className="h-4 w-4 sm:mr-1.5" /> <span className="hidden sm:inline">New Post</span></Link>
           </Button>
         </div>
       </div>

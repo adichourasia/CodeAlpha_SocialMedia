@@ -95,7 +95,7 @@ const PostCard = ({ post, showComments = false, onDeleted }: PostCardProps) => {
     <motion.article
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      className="border-b border-border bg-card p-4"
+      className="border-b border-border bg-card p-3 sm:p-4"
     >
       <div className="flex gap-3">
         <Link to={`/profile/${post.author.username}`}>
@@ -106,11 +106,11 @@ const PostCard = ({ post, showComments = false, onDeleted }: PostCardProps) => {
         </Link>
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Link to={`/profile/${post.author.username}`} className="font-heading text-sm font-semibold hover:underline">
+            <div className="min-w-0 flex flex-1 flex-wrap items-center gap-x-2 gap-y-0.5">
+              <Link to={`/profile/${post.author.username}`} className="truncate font-heading text-sm font-semibold hover:underline">
                 {post.author.displayName}
               </Link>
-              <span className="text-xs text-muted-foreground">@{post.author.username}</span>
+              <span className="max-w-[8rem] truncate text-xs text-muted-foreground sm:max-w-none">@{post.author.username}</span>
               <span className="text-xs text-muted-foreground">· {formatDistanceToNow(post.createdAt)}</span>
             </div>
             {currentUser?.id === post.author.id ? (
@@ -134,8 +134,7 @@ const PostCard = ({ post, showComments = false, onDeleted }: PostCardProps) => {
                 loading="lazy"
                 referrerPolicy="no-referrer"
                 onError={() => setPostImageSrc(getRealPhotoUrl(post.id, ''))}
-                className="mt-3 w-full rounded-lg object-cover"
-                style={{ maxHeight: 400 }}
+                className="mt-3 max-h-[280px] w-full rounded-lg object-cover sm:max-h-[400px]"
               />
             )}
           </Link>
