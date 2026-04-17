@@ -1,7 +1,15 @@
+
 import sqlite3 from 'sqlite3';
 import path from 'path';
+import fs from 'fs';
 
-const DB_PATH = path.join(process.cwd(), 'server', 'chatgram.db');
+// Ensure the data directory exists
+const dataDir = path.join(process.cwd(), 'server', 'data');
+if (!fs.existsSync(dataDir)) {
+  fs.mkdirSync(dataDir, { recursive: true });
+}
+
+const DB_PATH = path.join(dataDir, 'chatgram.db');
 
 const db = new sqlite3.Database(DB_PATH);
 
