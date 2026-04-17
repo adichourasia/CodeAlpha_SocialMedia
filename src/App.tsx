@@ -5,7 +5,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useStore } from "@/lib/store";
-import Navbar from "@/components/Navbar";
+import NavbarConditional from "@/components/NavbarConditional";
 import InstallPwaButton from "@/components/InstallPwaButton";
 import Home from "@/pages/Home";
 import Login from "@/pages/Login";
@@ -53,7 +53,7 @@ const App = () => {
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <Navbar />
+          <NavbarConditional />
           <InstallPwaButton />
           <Routes>
             <Route path="/" element={isAuthenticated ? <Home /> : <Navigate to="/login" replace />} />
