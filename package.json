@@ -14,7 +14,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "start": "concurrently \"npm run server\" \"npm run dev\""
+    "start": "concurrently \"npm run server\" \"npm run dev\"",
+    "postdeploy": "npm run seed:demo"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

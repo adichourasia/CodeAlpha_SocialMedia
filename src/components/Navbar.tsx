@@ -53,7 +53,7 @@ const Navbar = () => {
     navigate(`/profile/${username}`);
   };
 
-  if (!isAuthenticated) return null;
+
 
   return (
     <nav className="sticky top-0 z-50 border-b border-border bg-card/80 backdrop-blur-lg">
