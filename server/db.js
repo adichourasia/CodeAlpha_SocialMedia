@@ -62,6 +62,10 @@ const initDb = async () => {
     );
   `);
 
+  // Add indexes for faster user search
+  await run('CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);');
+  await run('CREATE INDEX IF NOT EXISTS idx_users_display_name ON users(display_name);');
+
   await run(`
     CREATE TABLE IF NOT EXISTS posts (
       id INTEGER PRIMARY KEY AUTOINCREMENT,

@@ -556,6 +556,24 @@ app.get('/api/posts/:postId/comments', async (req, res) => {
   }
 });
 
+// Search users by username or display name (case-insensitive, partial match)
+app.get('/api/users', async (req, res) => {
+  try {
+    const search = req.query.search?.toString().trim();
+    if (!search) {
+      res.status(400).json({ message: 'Missing search query' });
+      return;
+    }
+    const users = await all(
+      `SELECT * FROM users WHERE username LIKE ? OR display_name LIKE ? ORDER BY username LIMIT 20`,
+      [`%${search}%`, `%${search}%`]
+    );
+    res.json({ users: users.map(mapUser) });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to search users', details: error.message });
+  }
+});
+
 initDb()
   .then(() => {
     app.listen(PORT, () => {

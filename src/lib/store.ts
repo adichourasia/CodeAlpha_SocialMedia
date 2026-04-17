@@ -1,3 +1,4 @@
+  // ...existing code...
 import { create } from 'zustand';
 import {
   ApiError,
@@ -8,7 +9,8 @@ import {
   setStoredToken,
 } from '@/lib/api';
 
-export interface User {
+
+export type User = {
   id: number;
   username: string;
   email: string;
@@ -16,7 +18,7 @@ export interface User {
   bio: string;
   avatarUrl: string;
   createdAt: string;
-}
+};
 
 export interface PostAuthor {
   id: number;
@@ -121,6 +123,13 @@ const updatePostInState = (state: AppStore, postId: number, updater: (post: Post
   state.posts.map((post) => (post.id === postId ? updater(post) : post));
 
 export const useStore = create<AppStore>((set, get) => ({
+
+    // Search users by name (username or displayName)
+    searchUsers: async (query: string) => {
+      if (!query.trim()) return [];
+      const response = await apiRequest<{ users: User[] }>(`/api/users?search=${encodeURIComponent(query)}`, { method: 'GET' });
+      return response.users;
+    },
   token: getStoredToken(),
   currentUser: null,
   posts: [],

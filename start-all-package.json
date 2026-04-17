@@ -1,0 +1,9 @@
+{
+  "name": "start-all",
+  "scripts": {
+    "start": "concurrently \"npm run server\" \"npm run dev\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
