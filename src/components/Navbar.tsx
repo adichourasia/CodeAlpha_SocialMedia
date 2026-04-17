@@ -102,7 +102,7 @@ const Navbar = () => {
             <Link to="/create"><PlusCircle className="h-5 w-5" /></Link>
           </Button>
           <Button variant="ghost" size="icon" asChild>
-            <Link to={`/profile/${currentUser?.username}`}><User className="h-5 w-5" /></Link>
+            <Link to={`/profile/${currentUser?.username}`}><UserIcon className="h-5 w-5" /></Link>
           </Button>
           <Button variant="ghost" size="icon" onClick={handleLogout}>
             <LogOut className="h-5 w-5" />

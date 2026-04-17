@@ -1,5 +1,7 @@
   // ...existing code...
+
 import { create } from 'zustand';
+import type { User as UserType } from './store';
 import {
   ApiError,
   apiRequest,
@@ -66,7 +68,7 @@ export interface PaginationOptions {
 
 interface AppStore {
   token: string | null;
-  currentUser: User | null;
+  currentUser: UserType | null;
   posts: Post[];
   isAuthenticated: boolean;
   isBootstrapping: boolean;
@@ -87,8 +89,8 @@ interface AppStore {
   toggleFollow: (username: string) => Promise<boolean>;
   loadProfile: (username: string) => Promise<ProfileData>;
   loadProfilePosts: (username: string, options?: PaginationOptions) => Promise<{ posts: Post[]; hasMore: boolean }>;
-  loadFollowList: (username: string, type: 'followers' | 'following') => Promise<User[]>;
-  updateProfile: (data: Partial<Pick<User, 'displayName' | 'bio' | 'avatarUrl'>>) => Promise<User>;
+  loadFollowList: (username: string, type: 'followers' | 'following') => Promise<UserType[]>;
+  updateProfile: (data: Partial<Pick<UserType, 'displayName' | 'bio' | 'avatarUrl'>>) => Promise<UserType>;
   getPostById: (id: number) => Post | undefined;
   clearError: () => void;
 }
@@ -127,7 +129,7 @@ export const useStore = create<AppStore>((set, get) => ({
     // Search users by name (username or displayName)
     searchUsers: async (query: string) => {
       if (!query.trim()) return [];
-      const response = await apiRequest<{ users: User[] }>(`/api/users?search=${encodeURIComponent(query)}`, { method: 'GET' });
+      const response = await apiRequest<{ users: UserType[] }>(`/api/users?search=${encodeURIComponent(query)}`, { method: 'GET' });
       return response.users;
     },
   token: getStoredToken(),
