@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDistanceToNow } from '@/lib/time';
 import { toast } from 'sonner';
 import { getRealAvatarUrl } from '@/lib/avatar';
-import { getRealAvatarUrl as getRealPhotoUrl } from '@/lib/avatar';
+import { getRandomFeedImageUrl } from '@/lib/post-image';
 
 interface PostCardProps {
   post: Post;
@@ -133,7 +133,7 @@ const PostCard = ({ post, showComments = false, onDeleted }: PostCardProps) => {
                 alt=""
                 loading="lazy"
                 referrerPolicy="no-referrer"
-                onError={() => setPostImageSrc(getRealPhotoUrl(post.id, ''))}
+                onError={() => setPostImageSrc(getRandomFeedImageUrl(post.id))}
                 className="mt-3 max-h-[280px] w-full rounded-lg object-cover sm:max-h-[400px]"
               />
             )}

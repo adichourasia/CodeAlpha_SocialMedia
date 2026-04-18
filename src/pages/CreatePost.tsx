@@ -4,7 +4,7 @@ import { useStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, ImagePlus } from 'lucide-react';
 import { toast } from 'sonner';
-import { getRealAvatarUrl } from '@/lib/avatar';
+import { getRandomFeedImageUrl } from '@/lib/post-image';
 
 const CreatePost = () => {
   const [content, setContent] = useState('');
@@ -58,7 +58,7 @@ const CreatePost = () => {
                 loading="lazy"
                 referrerPolicy="no-referrer"
                 onError={(event) => {
-                  event.currentTarget.src = getRealAvatarUrl(previewImageUrl, '');
+                  event.currentTarget.src = getRandomFeedImageUrl(previewImageUrl);
                 }}
                 className="h-48 w-full object-cover"
               />

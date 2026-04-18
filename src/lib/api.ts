@@ -1,4 +1,5 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
+const envBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim();
+const API_BASE_URL = (envBaseUrl && envBaseUrl.length > 0 ? envBaseUrl : '/api').replace(/\/$/, '');
 const TOKEN_STORAGE_KEY = 'chatgram.token';
 
 export class ApiError extends Error {
@@ -28,8 +29,11 @@ type RequestOptions = Omit<RequestInit, 'body'> & {
 export const apiRequest = async <T>(path: string, options: RequestOptions = {}) => {
   const { body, headers, token, ...rest } = options;
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  const requestPath = API_BASE_URL === '/api' && normalizedPath.startsWith('/api')
+    ? normalizedPath
+    : `${API_BASE_URL}${normalizedPath}`;
 
-  const response = await fetch(`${API_BASE_URL}${normalizedPath}`, {
+  const response = await fetch(requestPath, {
     ...rest,
     headers: {
       'Content-Type': 'application/json',

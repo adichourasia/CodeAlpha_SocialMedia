@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "dev:server": "node --watch server/index.js",
+    "backend": "node --watch server/index.js",
     "server": "node server/index.js",
     "seed:demo": "node server/scripts/seed-demo.js",
     "build": "vite build",

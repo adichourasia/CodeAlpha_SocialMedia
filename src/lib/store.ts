@@ -10,6 +10,7 @@ import {
   protectedRequest,
   setStoredToken,
 } from '@/lib/api';
+import { getRandomFeedImageUrl } from '@/lib/post-image';
 
 
 export type User = {
@@ -97,7 +98,7 @@ interface AppStore {
 
 const normalizePost = (post: Omit<Post, 'comments'> & { comments?: PostComment[] }): Post => ({
   ...post,
-  imageUrl: post.imageUrl || '',
+  imageUrl: getRandomFeedImageUrl(post.id, post.imageUrl),
   comments: post.comments || [],
 });
 

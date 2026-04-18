@@ -159,7 +159,19 @@ app.post('/api/auth/login', async (req, res) => {
       return;
     }
 
-    const valid = await bcrypt.compare(password, user.password_hash);
+    if (typeof user.password_hash !== 'string' || user.password_hash.length === 0) {
+      res.status(401).json({ message: 'Invalid credentials' });
+      return;
+    }
+
+    let valid = false;
+    try {
+      valid = await bcrypt.compare(password, user.password_hash);
+    } catch {
+      res.status(401).json({ message: 'Invalid credentials' });
+      return;
+    }
+
     if (!valid) {
       res.status(401).json({ message: 'Invalid credentials' });
       return;
