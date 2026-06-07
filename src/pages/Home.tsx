@@ -6,6 +6,7 @@ import { Compass, PlusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { getRandomFeedImageUrl } from '@/lib/post-image';
+import Stories from '@/components/Stories';
 
 const EXPLORE_TOPICS = [
   'Sunrise routines',
@@ -23,6 +24,27 @@ const EXPLORE_TOPICS = [
 ];
 
 const EXPLORE_SEED_PREFIX = 'chatgram-explore';
+
+const PostSkeleton = () => (
+  <div className="border-b border-white/10 p-4 space-y-4">
+    <div className="flex items-center gap-3">
+      <div className="h-10 w-10 rounded-full skeleton-shimmer" />
+      <div className="flex-1 space-y-2">
+        <div className="h-3 w-1/3 rounded skeleton-shimmer" />
+        <div className="h-2 w-1/4 rounded skeleton-shimmer" />
+      </div>
+    </div>
+    <div className="space-y-2 pt-1">
+      <div className="h-3 w-full rounded skeleton-shimmer" />
+      <div className="h-3 w-5/6 rounded skeleton-shimmer" />
+    </div>
+    <div className="h-44 w-full rounded-xl skeleton-shimmer mt-2" />
+    <div className="flex gap-4 pt-1">
+      <div className="h-4 w-10 rounded skeleton-shimmer" />
+      <div className="h-4 w-10 rounded skeleton-shimmer" />
+    </div>
+  </div>
+);
 
 const Home = () => {
   const { posts, loadPosts, isLoadingPosts } = useStore();
@@ -78,24 +100,28 @@ const Home = () => {
   }, [hasMore, isFetchingMore, isLoadingPosts, loadPosts, posts.length]);
 
   return (
-    <div className="mx-auto max-w-2xl">
-      <div className="sticky top-14 z-40 border-b border-border bg-card/80 backdrop-blur-lg sm:top-16">
+    <div className="mx-auto max-w-2xl px-2 sm:px-0">
+      <div className="sticky top-0 z-40 border-b border-black/10 dark:border-white/5 bg-card/65 backdrop-blur-xl">
         <div className="flex items-center justify-between gap-2 px-3 py-2.5 sm:px-4 sm:py-3">
           <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
-            <span className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-primary/10 ring-1 ring-primary/15 sm:h-12 sm:w-12">
+            <span className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-primary/10 ring-1 ring-primary/15 sm:h-11 sm:w-11">
               <img src="/logo.png" alt="ChatGram" className="h-full w-full scale-[1.45] object-contain" />
             </span>
-            <h1 className="font-heading text-base font-bold sm:text-lg">Feed</h1>
+            <h1 className="font-heading text-base font-bold sm:text-lg gradient-text">Feed</h1>
           </div>
-          <Button size="sm" asChild>
-            <Link to="/create"><PlusCircle className="h-4 w-4 sm:mr-1.5" /> <span className="hidden sm:inline">New Post</span></Link>
+          <Button size="sm" asChild className="gradient-btn border-none rounded-xl">
+            <Link to="/create"><PlusCircle className="h-4 w-4 sm:mr-1.5" /> <span className="hidden sm:inline font-semibold">New Post</span></Link>
           </Button>
         </div>
       </div>
 
+      <Stories />
+
       {isLoadingPosts ? (
-        <div className="px-4 py-16 text-center">
-          <p className="text-muted-foreground">Loading feed...</p>
+        <div className="divide-y divide-black/5 dark:divide-white/5">
+          <PostSkeleton />
+          <PostSkeleton />
+          <PostSkeleton />
         </div>
       ) : null}
 

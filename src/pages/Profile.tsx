@@ -8,10 +8,11 @@ import { Download, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 import { getRealAvatarUrl } from '@/lib/avatar';
 import { usePwaInstall } from '@/lib/pwa';
+import { motion } from 'framer-motion';
 
 const Profile = () => {
   const { username } = useParams();
-  const { currentUser, toggleFollow, loadProfile, loadProfilePosts } = useStore();
+  const { currentUser, toggleFollow, loadProfile, loadProfilePosts, stories, setActiveStoryUser } = useStore();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -132,55 +133,91 @@ const Profile = () => {
   };
 
   return (
-    <div className="mx-auto max-w-2xl px-3 sm:px-0">
-      <div className="border-b border-border p-4 sm:p-6">
-        <div className="flex items-start gap-4">
-          <Avatar className="h-16 w-16 sm:h-20 sm:w-20">
-            <AvatarImage src={getRealAvatarUrl(user.username, user.avatarUrl)} alt={user.displayName} />
-            <AvatarFallback className="text-2xl">{user.displayName[0]}</AvatarFallback>
-          </Avatar>
-          <div className="flex-1">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="mx-auto max-w-2xl px-2 sm:px-0">
+      {/* Decorative Header Banner */}
+      <div className="relative w-full h-28 sm:h-40 bg-gradient-to-r from-pink-500 via-purple-600 to-indigo-600 rounded-b-2xl overflow-hidden shadow-inner">
+        <div className="absolute inset-0 bg-grid-white/[0.05] pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+      </div>
+
+      {/* Profile Info Glass Panel */}
+      <div className="relative z-10 -mt-12 px-4 pb-6 border-b border-black/5 dark:border-white/5 glass-card rounded-2xl p-5 mb-6 shadow-sm">
+        <div className="flex flex-col sm:flex-row items-start gap-4">
+          {stories.some(s => s.username === user.username) ? (
+            <div 
+              onClick={() => setActiveStoryUser(user.username)}
+              className={`p-[3px] rounded-full cursor-pointer transition-all hover:scale-105 ${
+                stories.find(s => s.username === user.username)?.viewed 
+                  ? 'border-2 border-muted-foreground/30' 
+                  : 'bg-gradient-to-tr from-yellow-500 via-pink-500 to-purple-600'
+              }`}
+            >
+              <Avatar className="h-20 w-20 sm:h-24 sm:w-24 ring-4 ring-background shadow-xl rounded-full">
+                <AvatarImage src={getRealAvatarUrl(user.username, user.avatarUrl)} alt={user.displayName} />
+                <AvatarFallback className="text-3xl bg-gradient-to-tr from-pink-500 to-purple-600 text-white font-bold">{user.displayName[0]}</AvatarFallback>
+              </Avatar>
+            </div>
+          ) : (
+            <Avatar className="h-20 w-20 sm:h-24 sm:w-24 ring-4 ring-background shadow-xl rounded-full">
+              <AvatarImage src={getRealAvatarUrl(user.username, user.avatarUrl)} alt={user.displayName} />
+              <AvatarFallback className="text-3xl bg-gradient-to-tr from-pink-500 to-purple-600 text-white font-bold">{user.displayName[0]}</AvatarFallback>
+            </Avatar>
+          )}
+          <div className="flex-1 w-full">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mt-2">
               <div className="min-w-0">
-                <h1 className="font-heading text-lg font-bold sm:text-xl">{user.displayName}</h1>
-                <p className="text-sm text-muted-foreground">@{user.username}</p>
+                <h1 className="font-heading text-xl font-bold tracking-tight text-foreground">{user.displayName}</h1>
+                <p className="text-xs sm:text-sm text-muted-foreground/90 font-medium">@{user.username}</p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 {isOwnProfile ? (
-                  <Button variant="outline" size="sm" asChild>
-                    <Link to="/edit-profile"><Settings className="mr-1.5 h-4 w-4" /> Edit</Link>
-                  </Button>
+                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                    <Button variant="outline" size="sm" asChild className="rounded-xl border-white/10 dark:border-white/5 bg-background/50 backdrop-blur-md">
+                      <Link to="/edit-profile"><Settings className="mr-1.5 h-4 w-4" /> Edit</Link>
+                    </Button>
+                  </motion.div>
                 ) : (
-                  <Button
-                    size="sm"
-                    variant={isFollowing ? 'outline' : 'default'}
-                    onClick={handleToggleFollow}
-                    disabled={isTogglingFollow}
+                  <motion.div 
+                    whileHover={{ scale: 1.05 }} 
+                    whileTap={{ scale: 0.95 }}
+                    layout
                   >
-                    {isFollowing ? 'Unfollow' : 'Follow'}
-                  </Button>
+                    <Button
+                      size="sm"
+                      variant={isFollowing ? 'outline' : 'default'}
+                      onClick={handleToggleFollow}
+                      disabled={isTogglingFollow}
+                      className={`rounded-xl px-4 transition-all duration-300 font-semibold ${!isFollowing ? 'gradient-btn border-none' : 'border-white/20'}`}
+                    >
+                      {isFollowing ? 'Unfollow' : 'Follow'}
+                    </Button>
+                  </motion.div>
                 )}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleInstallPwa}
-                  disabled={isInstalled}
-                  className="w-full sm:w-auto"
-                >
-                  <Download className="mr-1.5 h-4 w-4" />
-                  {isInstalled ? 'Installed' : canInstall ? 'Download PWA' : 'Download App'}
-                </Button>
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="w-full sm:w-auto">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleInstallPwa}
+                    disabled={isInstalled}
+                    className="w-full sm:w-auto rounded-xl border-white/10 dark:border-white/5 bg-background/50 backdrop-blur-md"
+                  >
+                    <Download className="mr-1.5 h-4 w-4" />
+                    {isInstalled ? 'Installed' : canInstall ? 'Download PWA' : 'Download App'}
+                  </Button>
+                </motion.div>
               </div>
             </div>
-            <p className="mt-2 text-sm">{user.bio}</p>
-            <div className="mt-3 flex flex-wrap gap-3 text-sm sm:gap-4">
-              <Link to={`/profile/${user.username}/followers`} className="hover:underline">
-                <span className="font-semibold">{stats.followerCount}</span> <span className="text-muted-foreground">followers</span>
+            <p className="mt-3 text-sm text-foreground/85 leading-relaxed">{user.bio || "No bio yet."}</p>
+            <div className="mt-4 flex flex-wrap gap-4 text-xs sm:text-sm pt-3 border-t border-black/5 dark:border-white/5">
+              <Link to={`/profile/${user.username}/followers`} className="hover:text-primary transition-colors">
+                <span className="font-semibold text-foreground">{stats.followerCount}</span> <span className="text-muted-foreground/80">followers</span>
               </Link>
-              <Link to={`/profile/${user.username}/following`} className="hover:underline">
-                <span className="font-semibold">{stats.followingCount}</span> <span className="text-muted-foreground">following</span>
+              <Link to={`/profile/${user.username}/following`} className="hover:text-primary transition-colors">
+                <span className="font-semibold text-foreground">{stats.followingCount}</span> <span className="text-muted-foreground/80">following</span>
               </Link>
-              <span><span className="font-semibold">{stats.postCount}</span> <span className="text-muted-foreground">posts</span></span>
+              <span className="text-muted-foreground/80">
+                <span className="font-semibold text-foreground">{stats.postCount}</span> posts
+              </span>
             </div>
           </div>
         </div>

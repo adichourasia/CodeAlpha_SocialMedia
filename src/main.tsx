@@ -2,6 +2,19 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 
+// Silence harmless Chrome extension message channel errors in the console
+window.addEventListener('unhandledrejection', (event) => {
+  if (
+    event.reason &&
+    typeof event.reason.message === 'string' &&
+    (event.reason.message.includes('A listener indicated an asynchronous response') ||
+      event.reason.message.includes('message channel closed'))
+  ) {
+    event.preventDefault();
+  }
+});
+
+
 if ('serviceWorker' in navigator) {
 	window.addEventListener('load', () => {
 		if (import.meta.env.PROD) {

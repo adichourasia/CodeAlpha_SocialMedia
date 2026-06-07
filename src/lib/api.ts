@@ -33,24 +33,38 @@ export const apiRequest = async <T>(path: string, options: RequestOptions = {}) 
     ? normalizedPath
     : `${API_BASE_URL}${normalizedPath}`;
 
-  const response = await fetch(requestPath, {
-    ...rest,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(headers || {}),
-    },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 6000);
 
-  const payload = await response.json().catch(() => ({}));
+  try {
+    const response = await fetch(requestPath, {
+      ...rest,
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(headers || {}),
+      },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
 
-  if (!response.ok) {
-    const message = payload?.message || 'Request failed';
-    throw new ApiError(message, response.status);
+    clearTimeout(timeoutId);
+
+    const payload = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      const message = payload?.message || 'Request failed';
+      throw new ApiError(message, response.status);
+    }
+
+    return payload as T;
+  } catch (error: unknown) {
+    clearTimeout(timeoutId);
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new ApiError('Request timed out. Please check if the backend API server is running.', 408);
+    }
+    throw error;
   }
-
-  return payload as T;
 };
 
 export const protectedRequest = async <T>(path: string, options: RequestOptions = {}) => {

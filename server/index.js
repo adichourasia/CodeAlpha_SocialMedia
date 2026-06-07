@@ -568,6 +568,58 @@ app.get('/api/posts/:postId/comments', async (req, res) => {
   }
 });
 
+// Simulated AI caption generator helper
+function generateCreativeCaptions(prompt, tone) {
+  const cleanPrompt = prompt ? prompt.trim() : '';
+  const topic = cleanPrompt || 'life and moments';
+
+  const templates = {
+    inspirational: [
+      `Believe in the magic of new beginnings. ✨ Sometimes all we need is a fresh perspective on ${topic}. #Inspiration #NewBeginnings #Growth`,
+      `Every path has its challenges, but the view from the top is always worth it. 🌟 ${cleanPrompt ? `Reflecting on ${cleanPrompt} today.` : 'Keep moving forward.'} #Mindset #Success #Motivation`,
+      `Create a life that feels good on the inside, not just one that looks good on the outside. 🍃 Celebrating ${topic}. #Inspire #AuthenticSelf #Positivity`
+    ],
+    humorous: [
+      `I’m not lazy, I’m just on energy-saving mode. 🔋 ${cleanPrompt ? `Currently dealing with ${cleanPrompt}.` : 'Please send snacks.'} #Sarcasm #LazySunday #CurrentMood`,
+      `My dentist said I need more crowns. I agree, I’m a queen. 👑 ${cleanPrompt ? `Me vs ${cleanPrompt}.` : 'Pretending to have my life together.'} #Humor #Relatable #SelfLove`,
+      `Doing "adulting" things today. Rating: 0/10. Do not recommend. 🙃 ${cleanPrompt ? `Especially ${cleanPrompt}.` : 'Can I restart my childhood?'} #Adulting #Funny #SendHelp`
+    ],
+    professional: [
+      `Delighted to share some insights on ${topic}. Collaboration and continuous learning are key to navigating today’s landscape. 💼 #ProfessionalGrowth #Leadership #Networking`,
+      `Consistency beats talent when talent doesn’t work hard. Focus on systems, execution, and clear strategy. 🚀 ${cleanPrompt ? `Our latest takeaways on ${cleanPrompt}.` : 'Building the future.'} #Business #Execution #Tech`,
+      `Unlocking new levels of efficiency. Successful outcomes are built on cross-functional alignment. 📈 ${cleanPrompt ? `Deep dive into ${cleanPrompt}.` : 'WorkplaceSuccess'} #Strategy #Innovation #Productivity`
+    ],
+    creative: [
+      `Lost in the whispers of ${topic}. 🔮 Where colors collide and ideas find their voice. #CreativeFlow #ArtOfLiving #Inspiration`,
+      `Stitching dreams into reality, one thread at a time. 🎨 ${cleanPrompt ? `Inspired by ${cleanPrompt}.` : 'A tapestry of thoughts.'} #Creativity #Innovate #DesignLife`,
+      `Unlocking the unexpected code of ${topic}. 💡 Where complexity meets simplicity. #CreateDaily #OutOfTheBox #Aesthetic`
+    ],
+    aesthetic: [
+      `golden hour thoughts on ${topic} 🌅✨ soft light, quiet minds. #Aesthetic #Minimalist #QuietMoments`,
+      `finding poetry in the ordinary. 🌿 ${cleanPrompt ? `a little slice of ${cleanPrompt}.` : 'peaceful mornings.'} #PoeticVibes #SimpleThings #Cozy`,
+      `slow down and admire the details. 🕊️ ${topic} in its purest form. #SlowLiving #AestheticFeed #QuietReflection`
+    ]
+  };
+
+  const list = templates[tone.toLowerCase()] || templates.creative;
+  return list;
+}
+
+// POST endpoint to generate captions
+app.post('/api/ai/generate-captions', auth, async (req, res) => {
+  try {
+    const { prompt, tone } = req.body;
+    if (!tone) {
+      res.status(400).json({ message: 'Tone is required' });
+      return;
+    }
+    const captions = generateCreativeCaptions(prompt, tone);
+    res.json({ captions });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to generate captions', details: error.message });
+  }
+});
+
 // Search users by username or display name (case-insensitive, partial match)
 app.get('/api/users', async (req, res) => {
   try {

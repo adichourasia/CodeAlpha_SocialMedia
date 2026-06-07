@@ -67,6 +67,31 @@ export interface PaginationOptions {
   reset?: boolean;
 }
 
+export interface Story {
+  username: string;
+  displayName: string;
+  avatarUrl: string;
+  mediaUrl: string;
+  caption: string;
+  viewed: boolean;
+}
+
+export interface ChatMessage {
+  id: number;
+  senderId: number;
+  text: string;
+  timestamp: string;
+}
+
+export interface Chat {
+  id: number;
+  username: string;
+  displayName: string;
+  avatarUrl: string;
+  online: boolean;
+  messages: ChatMessage[];
+}
+
 interface AppStore {
   token: string | null;
   currentUser: UserType | null;
@@ -94,6 +119,22 @@ interface AppStore {
   updateProfile: (data: Partial<Pick<UserType, 'displayName' | 'bio' | 'avatarUrl'>>) => Promise<UserType>;
   getPostById: (id: number) => Post | undefined;
   clearError: () => void;
+  searchUsers: (query: string) => Promise<UserType[]>;
+  generateCaptions: (prompt: string, tone: string) => Promise<string[]>;
+
+  // Stories state & actions
+  stories: Story[];
+  activeStoryUser: string | null;
+  setActiveStoryUser: (username: string | null) => void;
+  markStoryAsViewed: (username: string) => void;
+  addStory: (mediaUrl: string, caption: string) => void;
+
+  // Chat/DM state & actions
+  chats: Chat[];
+  activeChatId: number | null;
+  setActiveChatId: (id: number | null) => void;
+  sendMessage: (chatId: number, text: string) => void;
+  sendStoryReply: (username: string, replyText: string) => void;
 }
 
 const normalizePost = (post: Omit<Post, 'comments'> & { comments?: PostComment[] }): Post => ({
@@ -125,6 +166,93 @@ const buildQueryPath = (path: string, options: PaginationOptions = {}) => {
 const updatePostInState = (state: AppStore, postId: number, updater: (post: Post) => Post) =>
   state.posts.map((post) => (post.id === postId ? updater(post) : post));
 
+const DEFAULT_STORIES: Story[] = [
+  {
+    username: 'johndoe',
+    displayName: 'John Doe',
+    avatarUrl: 'https://ui-avatars.com/api/?name=John+Doe&background=8b5cf6&color=fff',
+    mediaUrl: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=600&auto=format&fit=crop&q=80',
+    caption: 'Fueling up for the weekend coding session! ☕️💻',
+    viewed: false
+  },
+  {
+    username: 'sarah_k',
+    displayName: 'Sarah King',
+    avatarUrl: 'https://ui-avatars.com/api/?name=Sarah+King&background=3b82f6&color=fff',
+    mediaUrl: 'https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=600&auto=format&fit=crop&q=80',
+    caption: 'Colors of today 🎨🖌️',
+    viewed: false
+  },
+  {
+    username: 'emma_b',
+    displayName: 'Emma Brown',
+    avatarUrl: 'https://ui-avatars.com/api/?name=Emma+Brown&background=f97316&color=fff',
+    mediaUrl: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=600&auto=format&fit=crop&q=80',
+    caption: "Someone doesn't want me to work today 🐾❤️",
+    viewed: false
+  },
+  {
+    username: 'tech_wizard',
+    displayName: 'Tech Wizard',
+    avatarUrl: 'https://ui-avatars.com/api/?name=Tech+Wizard&background=10b981&color=fff',
+    mediaUrl: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=600&auto=format&fit=crop&q=80',
+    caption: 'Upgrading the mainframe 🚀🔌',
+    viewed: false
+  },
+  {
+    username: 'photo_nomad',
+    displayName: 'Photo Nomad',
+    avatarUrl: 'https://ui-avatars.com/api/?name=Photo+Nomad&background=3b82f6&color=fff',
+    mediaUrl: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=600&auto=format&fit=crop&q=80',
+    caption: 'Chasing horizons 🌅🌵',
+    viewed: false
+  },
+  {
+    username: 'baker_delight',
+    displayName: 'Baker Delight',
+    avatarUrl: 'https://ui-avatars.com/api/?name=Baker+Delight&background=f59e0b&color=fff',
+    mediaUrl: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&auto=format&fit=crop&q=80',
+    caption: 'Fresh sourdough out of the oven! 🥖🔥',
+    viewed: false
+  }
+];
+
+const DEFAULT_CHATS: Chat[] = [
+  {
+    id: 1,
+    username: 'johndoe',
+    displayName: 'John Doe',
+    avatarUrl: 'https://ui-avatars.com/api/?name=John+Doe&background=8b5cf6&color=fff',
+    online: true,
+    messages: [
+      { id: 1, senderId: 2, text: "Hey! Did you check out the new layout updates on ChatGram?", timestamp: "10:15 AM" },
+      { id: 2, senderId: 1, text: "Yes, it looks amazing! I love the glassmorphism elements.", timestamp: "10:16 AM" },
+      { id: 3, senderId: 2, text: "Awesome! The double tap to like is so addictive now.", timestamp: "10:17 AM" },
+    ]
+  },
+  {
+    id: 2,
+    username: 'sarah_k',
+    displayName: 'Sarah King',
+    avatarUrl: 'https://ui-avatars.com/api/?name=Sarah+King&background=3b82f6&color=fff',
+    online: false,
+    messages: [
+      { id: 1, senderId: 2, text: "Let me know when you get offline, we need to coordinate the feed content.", timestamp: "Yesterday" }
+    ]
+  },
+  {
+    id: 3,
+    username: 'emma_b',
+    displayName: 'Emma Brown',
+    avatarUrl: 'https://ui-avatars.com/api/?name=Emma+Brown&background=f97316&color=fff',
+    online: true,
+    messages: [
+      { id: 1, senderId: 2, text: "The parallax backgrounds are so smooth!", timestamp: "2h ago" },
+      { id: 2, senderId: 1, text: "Absolutely, they add so much depth to scrolling.", timestamp: "2h ago" }
+    ]
+  }
+];
+
 export const useStore = create<AppStore>((set, get) => ({
 
     // Search users by name (username or displayName)
@@ -133,6 +261,15 @@ export const useStore = create<AppStore>((set, get) => ({
       const response = await apiRequest<{ users: UserType[] }>(`/api/users?search=${encodeURIComponent(query)}`, { method: 'GET' });
       return response.users;
     },
+    generateCaptions: async (prompt: string, tone: string) => {
+      const { token } = get();
+      const response = await protectedRequest<{ captions: string[] }>('/api/ai/generate-captions', {
+        method: 'POST',
+        token,
+        body: { prompt, tone },
+      });
+      return response.captions;
+    },
   token: getStoredToken(),
   currentUser: null,
   posts: [],
@@ -140,6 +277,158 @@ export const useStore = create<AppStore>((set, get) => ({
   isBootstrapping: true,
   isLoadingPosts: false,
   error: null,
+
+  // Stories
+  stories: DEFAULT_STORIES,
+  activeStoryUser: null,
+  setActiveStoryUser: (username) => set({ activeStoryUser: username }),
+  markStoryAsViewed: (username) => set((state) => ({
+    stories: state.stories.map(s => s.username === username ? { ...s, viewed: true } : s)
+  })),
+  addStory: (mediaUrl, caption) => set((state) => {
+    if (!state.currentUser) return {};
+    const newStory: Story = {
+      username: state.currentUser.username,
+      displayName: state.currentUser.displayName,
+      avatarUrl: state.currentUser.avatarUrl || `https://ui-avatars.com/api/?name=${state.currentUser.username}`,
+      mediaUrl,
+      caption,
+      viewed: false
+    };
+    const filtered = state.stories.filter(s => s.username !== state.currentUser?.username);
+    return {
+      stories: [newStory, ...filtered]
+    };
+  }),
+
+  // Chat/DMs
+  chats: DEFAULT_CHATS,
+  activeChatId: 1,
+  setActiveChatId: (id) => set({ activeChatId: id }),
+  sendMessage: (chatId, text) => {
+    const { currentUser } = get();
+    if (!currentUser) return;
+
+    const userMessage: ChatMessage = {
+      id: Date.now(),
+      senderId: currentUser.id,
+      text: text.trim(),
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+
+    set((state) => ({
+      chats: state.chats.map((c) =>
+        c.id === chatId
+          ? { ...c, messages: [...c.messages, userMessage] }
+          : c
+      )
+    }));
+
+    // Trigger mock auto-reply bot
+    setTimeout(() => {
+      const currentChat = get().chats.find((c) => c.id === chatId);
+      if (!currentChat) return;
+
+      const getBotReply = (userText: string) => {
+        const cleanText = userText.toLowerCase().trim();
+        if (cleanText.includes('hello') || cleanText.includes('hey') || cleanText.includes('hi')) {
+          return "Hey there! How is your day going on ChatGram?";
+        }
+        if (cleanText.includes('?') || cleanText.includes('why') || cleanText.includes('how')) {
+          return "That is a very good question! I'm still figuring that out myself.";
+        }
+        if (cleanText.includes('cool') || cleanText.includes('awesome') || cleanText.includes('nice')) {
+          return "Totally! The coding team really nailed this release.";
+        }
+        const replies = [
+          "I saw your latest post, that photo was amazing!",
+          "Indeed! Let's catch up later today.",
+          "Haha, that's true.",
+          "Absolutely agree with you on that.",
+          "I'm actually testing out the light and dark theme mode, it's so satisfying."
+        ];
+        return replies[Math.floor(Math.random() * replies.length)];
+      };
+
+      const botMessage: ChatMessage = {
+        id: Date.now() + 1,
+        senderId: chatId,
+        text: getBotReply(text),
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+
+      set((state) => ({
+        chats: state.chats.map((c) =>
+          c.id === chatId
+            ? { ...c, messages: [...c.messages, botMessage] }
+            : c
+        )
+      }));
+    }, 1500);
+  },
+
+  sendStoryReply: (username, replyText) => {
+    const { currentUser, chats } = get();
+    if (!currentUser) return;
+
+    const existingChat = chats.find(c => c.username === username);
+    const chatId = existingChat ? existingChat.id : Date.now();
+
+    const userMessage: ChatMessage = {
+      id: Date.now(),
+      senderId: currentUser.id,
+      text: `Replied to your story: "${replyText}"`,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+
+    if (!existingChat) {
+      const mockAvatars: Record<string, string> = {
+        johndoe: 'https://ui-avatars.com/api/?name=John+Doe&background=8b5cf6&color=fff',
+        sarah_k: 'https://ui-avatars.com/api/?name=Sarah+King&background=3b82f6&color=fff',
+        emma_b: 'https://ui-avatars.com/api/?name=Emma+Brown&background=f97316&color=fff',
+        tech_wizard: 'https://ui-avatars.com/api/?name=Tech+Wizard&background=10b981&color=fff',
+        photo_nomad: 'https://ui-avatars.com/api/?name=Photo+Nomad&background=3b82f6&color=fff',
+        baker_delight: 'https://ui-avatars.com/api/?name=Baker+Delight&background=f59e0b&color=fff',
+      };
+
+      const newChat: Chat = {
+        id: chatId,
+        username,
+        displayName: username.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase()),
+        avatarUrl: mockAvatars[username] || `https://ui-avatars.com/api/?name=${username}`,
+        online: true,
+        messages: [userMessage]
+      };
+
+      set((state) => ({
+        chats: [...state.chats, newChat]
+      }));
+    } else {
+      set((state) => ({
+        chats: state.chats.map((c) =>
+          c.id === chatId
+            ? { ...c, messages: [...c.messages, userMessage] }
+            : c
+        )
+      }));
+    }
+
+    setTimeout(() => {
+      const botMessage: ChatMessage = {
+        id: Date.now() + 1,
+        senderId: chatId,
+        text: `Thanks for replying to my story! glad you liked it! 😊✨`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+      set((state) => ({
+        chats: state.chats.map((c) =>
+          c.id === chatId
+            ? { ...c, messages: [...c.messages, botMessage] }
+            : c
+        )
+      }));
+    }, 1500);
+  },
 
   initializeAuth: async () => {
     const token = getStoredToken();
@@ -157,9 +446,14 @@ export const useStore = create<AppStore>((set, get) => ({
         isBootstrapping: false,
         error: null,
       });
-    } catch {
-      clearStoredToken();
-      set({ token: null, currentUser: null, isAuthenticated: false, isBootstrapping: false });
+    } catch (error: unknown) {
+      if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
+        clearStoredToken();
+        set({ token: null, currentUser: null, isAuthenticated: false, isBootstrapping: false });
+      } else {
+        // Safe bootstrapping resolution: stop loading, do not clear token for network timeouts.
+        set({ isBootstrapping: false });
+      }
     }
   },
 
