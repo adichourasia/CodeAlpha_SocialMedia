@@ -45,6 +45,12 @@ const App = () => {
 
   // Initialize Lenis smooth scroll
   useEffect(() => {
+    // Only initialize Lenis on desktop/non-touch devices to ensure native, hardware-accelerated scrolling on mobile
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    if (isTouchDevice) {
+      return;
+    }
+
     const lenis = new Lenis({
       duration: 1.1,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
@@ -97,8 +103,12 @@ const App = () => {
           <TooltipProvider>
             <Toaster />
             <Sonner />
-            <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground bg-background">
-              Loading ChatGram...
+            <div className="flex min-h-screen items-center justify-center bg-background">
+              <div className="flex flex-col items-center animate-pulse">
+                <span className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-3xl bg-primary/10 ring-1 ring-primary/15 shadow-md">
+                  <img src="/logo.png" alt="ChatGram Logo" className="h-full w-full scale-[1.45] object-contain" />
+                </span>
+              </div>
             </div>
           </TooltipProvider>
         </QueryClientProvider>
@@ -112,7 +122,7 @@ const App = () => {
         <TooltipProvider>
           <Toaster />
           <Sonner />
-          <BrowserRouter>
+          <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
             <div className="relative min-h-screen w-full bg-background/40 transition-colors duration-500">
               {/* Drifting Aesthetic Parallax Background Blobs */}
               <div 

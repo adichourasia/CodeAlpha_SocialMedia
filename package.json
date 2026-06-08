@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently \"npm run backend\" \"vite\"",
     "dev:server": "node --watch server/index.js",
     "backend": "node --watch server/index.js",
     "server": "node server/index.js",
@@ -15,7 +15,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "start": "concurrently \"npm run server\" \"npm run dev\"",
+    "start": "concurrently \"npm run server\" \"vite\"",
     "postdeploy": "npm run seed:demo"
   },
   "dependencies": {

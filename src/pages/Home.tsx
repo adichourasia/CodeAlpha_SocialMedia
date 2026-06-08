@@ -107,7 +107,7 @@ const Home = () => {
             <span className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-primary/10 ring-1 ring-primary/15 sm:h-11 sm:w-11">
               <img src="/logo.png" alt="ChatGram" className="h-full w-full scale-[1.45] object-contain" />
             </span>
-            <h1 className="font-heading text-base font-bold sm:text-lg gradient-text">Feed</h1>
+            <h1 className="font-heading text-base font-bold sm:text-lg text-foreground">Feed</h1>
           </div>
           <Button size="sm" asChild className="gradient-btn border-none rounded-xl">
             <Link to="/create"><PlusCircle className="h-4 w-4 sm:mr-1.5" /> <span className="hidden sm:inline font-semibold">New Post</span></Link>

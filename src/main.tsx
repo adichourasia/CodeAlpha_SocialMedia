@@ -3,14 +3,28 @@ import App from "./App.tsx";
 import "./index.css";
 
 // Silence harmless Chrome extension message channel errors in the console
+const isExtensionError = (err: any): boolean => {
+  if (!err) return false;
+  const errMsg = typeof err === 'string' ? err : err.message || err.stack || '';
+  if (typeof errMsg !== 'string') return false;
+  return (
+    errMsg.includes('A listener indicated an asynchronous response') ||
+    errMsg.includes('message channel closed') ||
+    errMsg.includes('extension')
+  );
+};
+
 window.addEventListener('unhandledrejection', (event) => {
-  if (
-    event.reason &&
-    typeof event.reason.message === 'string' &&
-    (event.reason.message.includes('A listener indicated an asynchronous response') ||
-      event.reason.message.includes('message channel closed'))
-  ) {
+  if (isExtensionError(event.reason) || isExtensionError(event.detail)) {
     event.preventDefault();
+    event.stopPropagation();
+  }
+});
+
+window.addEventListener('error', (event) => {
+  if (isExtensionError(event.error) || isExtensionError(event.message)) {
+    event.preventDefault();
+    event.stopPropagation();
   }
 });
 

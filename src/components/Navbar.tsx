@@ -137,7 +137,7 @@ const Navbar = () => {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 15, scale: 0.95 }}
                 transition={{ duration: 0.2 }}
-                className="absolute right-0 mt-2 w-72 sm:w-80 rounded-2xl border border-black/10 dark:border-white/5 bg-card/95 backdrop-blur-xl p-3 shadow-xl z-50 space-y-2"
+                className="absolute right-0 top-full mt-2 w-72 sm:w-80 rounded-2xl border border-black/10 dark:border-white/5 bg-card/95 backdrop-blur-xl p-3 shadow-xl z-50 space-y-2"
               >
                 <h3 className="font-heading font-bold text-xs uppercase tracking-wider text-muted-foreground/80 pl-1">Notifications</h3>
                 <div className="divide-y divide-black/5 dark:divide-white/5 max-h-60 overflow-y-auto pr-1">
