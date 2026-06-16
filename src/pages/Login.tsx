@@ -101,12 +101,23 @@ const Login = () => {
               <button
                 key={account.username}
                 type="button"
-                onClick={() => {
+                disabled={isSubmitting}
+                onClick={async () => {
                   setUsername(account.username);
                   setPassword('demo1234');
-                  toast.success(`Autofilled credentials for ${account.label}!`);
+                  setIsSubmitting(true);
+                  try {
+                    await login(account.username, 'demo1234');
+                    toast.success(`Logged in as ${account.label}!`);
+                    navigate('/');
+                  } catch (error) {
+                    const message = error instanceof Error ? error.message : 'Login failed';
+                    toast.error(message);
+                  } finally {
+                    setIsSubmitting(false);
+                  }
                 }}
-                className="flex flex-col items-center justify-center py-2 px-3 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 transition-all text-center group"
+                className="flex flex-col items-center justify-center py-2 px-3 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-center group"
               >
                 <span className="text-xs font-bold text-foreground/95 group-hover:text-primary transition-colors">{account.label}</span>
                 <span className="text-[9px] text-muted-foreground">@{account.username}</span>
